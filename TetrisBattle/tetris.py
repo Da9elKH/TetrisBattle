@@ -713,9 +713,50 @@ class Tetris(object):
         #     self.natural_down_counter += 1
 
     def trigger(self, evt):
-        # if (hasattr(evt, "key")):
-        #     print(evt.key)
-        if evt.type == pygame.KEYDOWN:
+        if (hasattr(evt, "joy")):
+            if self.player.id != evt.joy:
+                return
+
+            elif(evt.type == pygame.JOYAXISMOTION):
+                left = (round(evt.axis) == 0 and round(evt.value) == -1)
+                right = (round(evt.axis) == 0 and round(evt.value) == 1)
+                up = (round(evt.axis) == 1 and round(evt.value) == -1)
+                down = (round(evt.axis) == 1 and round(evt.value) == 1)
+
+                if up and self.LAST_ROTATE_TIME >= ROTATE_FREQ:
+                    # ROTATE RIGHT
+                    self.block, self.px, self.py, self.tspin = rotate(self.grid, self.block, self.px, self.py, _dir=1)
+                    self.LAST_ROTATE_TIME = 0
+                elif right:
+                    self.pressedRight = True
+                elif left:
+                    self.pressedLeft = True
+                elif down:
+                    self.pressedDown = True
+                else:
+                    self.pressedRight = self.pressedLeft = self.pressedDown = False
+
+            elif(evt.type == pygame.JOYBUTTONDOWN):
+                print(evt)
+
+                # HOLDING
+                if evt.button == 4:
+                    if not self.isholded:
+                        self.block, self.held = hold(self.block, self.held, self.buffer) # parameters
+                        self.held.reset()
+                        self.reset_pos()
+                        self.isholded = 1
+                elif evt.button == 2:
+                    y = hardDrop(self.grid, self.block, self.px, self.py) # parameters
+                    self.py += y
+                    self.LAST_FALL_DOWN_TIME = FALL_DOWN_FREQ
+            elif evt.type == pygame.JOYBUTTONUP:
+                self.pressedRight = self.pressedLeft = self.pressedDown = False
+            else:
+                pass
+
+        # Standard Keys
+        elif evt.type == pygame.KEYDOWN:
             if evt.key == self.player.rotate_right and self.LAST_ROTATE_TIME >= ROTATE_FREQ: # rotating
                 self.block, self.px, self.py, self.tspin = rotate(self.grid, self.block, self.px, self.py, _dir=1)
                 self.LAST_ROTATE_TIME = 0

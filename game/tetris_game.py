@@ -275,6 +275,17 @@ class TetrisGameDouble(TetrisGame):
         time = MAX_TIME   # milisecond
         delaytime = time
 
+        if pygame.joystick.get_count() != 2:
+            print("No gamepad connected!","Exiting")
+            exit()
+        else:
+            print("Found gamepads")
+            gamepad_0 = pygame.joystick.Joystick(0)
+            gamepad_1 = pygame.joystick.Joystick(1)
+            
+            gamepad_0.init()
+            gamepad_1.init()
+
         info_dict_list = [
             {
             "id": 0,
