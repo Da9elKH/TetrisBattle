@@ -1,6 +1,7 @@
 import pygame
 import argparse
 from TetrisBattle.settings import *
+from joystick import PygameCustomJoystick
 
 import time as t
 
@@ -51,8 +52,9 @@ class TetrisGame:
     def __init__(self):
         # import os 
         # os.environ["SDL_VIDEODRIVER"] = "dummy"
-        # SCREEN = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), pygame.FULLSCREEN) # SCREEN is 800*600 
-        self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT)) # SCREEN is 800*600 
+        #self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), pygame.FULLSCREEN) # SCREEN is 800*600 
+        self.screen_mode = pygame.FULLSCREEN
+        self.screen = pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), self.screen_mode) # SCREEN is 800*600 
         images = load_imgs()
         self.renderer = Renderer(self.screen, images)
 
@@ -64,6 +66,21 @@ class TetrisGame:
         # fix the FPS to FPS (100)
         self._fix_speed_cross_device = True
         self._fix_fps = FPS
+        self.joysticks = {
+            0: PygameCustomJoystick(),
+            1: PygameCustomJoystick()
+        }
+
+        pygame.joystick.init()
+        if pygame.joystick.get_count() != 2:
+            print("No gamepad connected!","Exiting")
+            #exit()
+        else:
+            for i in range(0, pygame.joystick.get_count()):
+                gamepad = pygame.joystick.Joystick(i)
+                self.joysticks[i] = PygameCustomJoystick(gamepad)
+                self.joysticks[i].joystick.init()
+
 
     def update_time(self, _time, running):
         # update the time clock and return the running state
@@ -198,16 +215,31 @@ class TetrisGame:
     def menu(self, page):
         running = True
         button1 = pygame.Rect(320, 204, 146, 50)#start rect
-        buttons = [pygame.Rect(325, y * 42 + 275, 135, 30) for y in range(3)]#other three rects 
+        buttons = [pygame.Rect(325, y * 42 + 275, 135, 30) for y in range(4)]#other three rects 
         vals = ["viewmap", "instructions", "exit"]#values of other three rects
-        
         
         self.renderer.drawByName("intro", 0, 0)
         pygame.display.set_caption("Tetris Battle", "tetris battle")
+        
+        # Works on both joysticks
+        
         while running:
             for evnt in pygame.event.get():
+                if self.joysticks[0].clicked("Y", evnt) or self.joysticks[1].clicked("Y", evnt):
+                    return "start" 
+                if self.joysticks[0].clicked("A", evnt) or self.joysticks[1].clicked("A", evnt):
+                    return "exit"
+                if self.joysticks[0].clicked("SELECT", evnt) or self.joysticks[1].clicked("SELECT", evnt):
+                    if (self.screen_mode == pygame.FULLSCREEN):
+                        self.screen_mode = pygame.SHOWN
+                    else:
+                        self.screen_mode = pygame.FULLSCREEN
+                    pygame.display.set_mode((SCREENWIDTH, SCREENHEIGHT), self.screen_mode) # SCREEN is 800*600 
+                    pygame.display.update()    
+
                 if evnt.type == pygame.QUIT:
                     return "exit"
+
             mpos = pygame.mouse.get_pos()
             mb = pygame.mouse.get_pressed()
             #print mpos
@@ -257,7 +289,9 @@ class TetrisGameDouble(TetrisGame):
     def start(self):#parameters are FP/s rate and timer countdown
     ################################################################################
         
-        gridchoice = self.setmap()#calling the setmap function for a choice of grid
+        gridchoice = "none" 
+        #gridchoice = self.setmap() #calling the setmap function for a choice of grid
+        
         self.timer2p.tick()
         #the code below is what happens when you set a map
         #different maps = differnet grids
@@ -274,17 +308,6 @@ class TetrisGameDouble(TetrisGame):
         #of the timer
         time = MAX_TIME   # milisecond
         delaytime = time
-
-        if pygame.joystick.get_count() != 2:
-            print("No gamepad connected!","Exiting")
-            exit()
-        else:
-            print("Found gamepads")
-            gamepad_0 = pygame.joystick.Joystick(0)
-            gamepad_1 = pygame.joystick.Joystick(1)
-            
-            gamepad_0.init()
-            gamepad_1.init()
 
         info_dict_list = [
             {
@@ -314,13 +337,14 @@ class TetrisGameDouble(TetrisGame):
         for i in range(self.num_players):
             tetris_list.append({
                 'info_dict': info_dict_list[i],
-                'tetris': Tetris(Player(info_dict_list[i]), gridchoice),
-                'pos': POS_LIST[i]
+                'tetris': Tetris(Player(info_dict_list[i]), gridchoice, self.joysticks[i]),
+                'pos': POS_LIST[i],
             })
 
         winner = 0
         force_quit = 0
         #main loop
+
         while running:
             # battlemusic.play()#plays music
             
@@ -328,12 +352,16 @@ class TetrisGameDouble(TetrisGame):
                 tetris_dict["tetris"].natural_down()
 
             for evt in pygame.event.get():
+                if self.joysticks[0].clicked("START", evt) or self.joysticks[1].clicked("START", evt):
+                    running = False
+                    force_quit = 1
+                
                 if evt.type == pygame.QUIT:
                     running = False
                     force_quit = 1
-
-                for tetris_dict in tetris_list:
-                    tetris_dict["tetris"].trigger(evt)
+                else:
+                    for tetris_dict in tetris_list:
+                        tetris_dict["tetris"].trigger(evt)
 
             for tetris_dict in tetris_list:
                 tetris_dict["tetris"].move()
@@ -459,7 +487,7 @@ class TetrisGameSingle(TetrisGame):
     def start(self):#parameters are FP/s rate and timer countdown
     ################################################################################
 
-        gridchoice = self.setmap()#calling the setmap function for a choice of grid
+        gridchoice = "none" #self.setmap()#calling the setmap function for a choice of grid
 
         self.timer2p.tick()
         #the code below is what happens when you set a map

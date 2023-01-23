@@ -482,7 +482,7 @@ class Judge(object):
                 return tetris_1.get_id() # no UI of draw
 
 class Tetris(object):
-    def __init__(self, player, gridchoice):
+    def __init__(self, player, gridchoice, joystick):
 
         if gridchoice == "none":
             self.o_grid = [[0] * GRID_DEPTH for i in range(GRID_WIDTH)]
@@ -525,6 +525,7 @@ class Tetris(object):
 
 
         self.player = player
+        self.joystick = joystick
 
         self.reset()
 
@@ -713,47 +714,32 @@ class Tetris(object):
         #     self.natural_down_counter += 1
 
     def trigger(self, evt):
-        if (hasattr(evt, "joy")):
-            if self.player.id != evt.joy:
-                return
-
-            elif(evt.type == pygame.JOYAXISMOTION):
-                left = (round(evt.axis) == 0 and round(evt.value) == -1)
-                right = (round(evt.axis) == 0 and round(evt.value) == 1)
-                up = (round(evt.axis) == 1 and round(evt.value) == -1)
-                down = (round(evt.axis) == 1 and round(evt.value) == 1)
-
-                if up and self.LAST_ROTATE_TIME >= ROTATE_FREQ:
-                    # ROTATE RIGHT
-                    self.block, self.px, self.py, self.tspin = rotate(self.grid, self.block, self.px, self.py, _dir=1)
-                    self.LAST_ROTATE_TIME = 0
-                elif right:
-                    self.pressedRight = True
-                elif left:
-                    self.pressedLeft = True
-                elif down:
-                    self.pressedDown = True
-                else:
-                    self.pressedRight = self.pressedLeft = self.pressedDown = False
-
-            elif(evt.type == pygame.JOYBUTTONDOWN):
-                print(evt)
-
-                # HOLDING
-                if evt.button == 4:
-                    if not self.isholded:
-                        self.block, self.held = hold(self.block, self.held, self.buffer) # parameters
-                        self.held.reset()
-                        self.reset_pos()
-                        self.isholded = 1
-                elif evt.button == 2:
-                    y = hardDrop(self.grid, self.block, self.px, self.py) # parameters
-                    self.py += y
-                    self.LAST_FALL_DOWN_TIME = FALL_DOWN_FREQ
-            elif evt.type == pygame.JOYBUTTONUP:
-                self.pressedRight = self.pressedLeft = self.pressedDown = False
+        if "joy" in dir(evt):
+            # ROTATING
+            if self.joystick.clicked("R", evt) and self.LAST_ROTATE_TIME >= ROTATE_FREQ:
+                self.block, self.px, self.py, self.tspin = rotate(self.grid, self.block, self.px, self.py, _dir=1)
+                self.LAST_ROTATE_TIME = 0
+            elif self.joystick.clicked("L", evt) and self.LAST_ROTATE_TIME >= ROTATE_FREQ:
+                self.block, self.px, self.py, self.tspin = rotate(self.grid, self.block, self.px, self.py, _dir=-1)
+                self.LAST_ROTATE_TIME = 0
+            elif self.joystick.clicked("LEFT", evt):
+                self.pressedLeft = True
+            elif self.joystick.clicked("RIGHT", evt):
+                self.pressedRight = True
+            elif self.joystick.clicked("DOWN", evt):
+                self.pressedDown = True
+            elif self.joystick.clicked("X", evt):
+                if not self.isholded:
+                    self.block, self.held = hold(self.block, self.held, self.buffer) # parameters
+                    self.held.reset()
+                    self.reset_pos()
+                    self.isholded = 1
+            elif self.joystick.clicked("B", evt):
+                y = hardDrop(self.grid, self.block, self.px, self.py) # parameters
+                self.py += y
+                self.LAST_FALL_DOWN_TIME = FALL_DOWN_FREQ
             else:
-                pass
+                self.pressedRight = self.pressedLeft = self.pressedDown = False
 
         # Standard Keys
         elif evt.type == pygame.KEYDOWN:

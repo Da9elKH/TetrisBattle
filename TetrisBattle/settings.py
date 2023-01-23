@@ -18,7 +18,7 @@ SCREENHEIGHT = 600
 
 SPEED_UP = 1
 
-MAX_TIME = 1200000
+MAX_TIME = 120000
 
 PIECE_SHAPE_NUM = 4
 
@@ -66,7 +66,7 @@ MAX_COMBO = 10
 
 # MUSIC_PATH
 
-MUSIC_PATH = os.path.join(ROOT, "assets/battlemusic.wav")
+MUSIC_PATH = os.path.join(ROOT, "assets/sounds/battlemusic.wav")
 
 # BLOCKS
 
